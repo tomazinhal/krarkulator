@@ -1,0 +1,14 @@
+        mana = Mana(
+            white=self.mana.white + other.mana.white,
+            blue=self.mana.blue + other.mana.blue,
+            black=self.mana.black + other.mana.black,
+            red=self.mana.red + other.mana.red,
+            green=self.mana.green + other.mana.green,
+            colorless=self.mana.colorless + other.mana.colorless
+        )
+        return Result(
+            mana=mana,
+            untaps=self.untaps + other.untaps,
+            treasures=self.treasures + other.treasures,
+            prowess=self.prowess + other.prowess,
+        )
