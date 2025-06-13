@@ -22,6 +22,7 @@ class Engine:
         self.board: list[Card] = board
         self.history: list[Coin] = []
         self.result: Result = Result.empty()
+        self.cast_counter: int = 0
 
     def flip(self):
         result = choice([Coin.HEADS, Coin.TAILS])
@@ -32,13 +33,14 @@ class Engine:
     def trigger_on_non_creature(self) -> Result:
         results = Result.empty()
         for card in self.board:
+            logger.debug(f"Non creature cast from {card} triggered.")
             results += card.trigger_on_non_creature()
         return results
 
     def trigger_magecraft(self) -> Result:
         results = Result.empty()
         for card in self.board:
-            logger.info(f"Magecraft from {card} triggered.")
+            logger.debug(f"Magecraft from {card} triggered.")
             results += card.trigger_magecraft()
         return results
 
@@ -52,7 +54,7 @@ class Engine:
             - `Card.trigger_magecraft`
         """
         results = Result.empty()
-        logger.info(f"Casting {cast.name}.")
+        logger.debug(f"Casting {cast.name}.")
         cast.cast()
         for card in self.board:
             logger.debug(f"Checking {card.name}")
@@ -64,15 +66,15 @@ class Engine:
         return results
 
     @staticmethod
-    def pay_spell(cast: Card, pool: Result) -> Result:
-        logger.debug(f"Cost of spell: {cast.cost}, pool: {pool}")
-        return pool - Result.from_colors(cast.cost)
+    def pay_spell(spell: Card, pool: Result) -> Result:
+        logger.debug(f"Cost of spell: {spell.cost}, pool: {pool}")
+        return pool - spell.cost
 
     def run(
         self, cast: Card, board: list[Card], pool: Optional[Result] = Result.empty()
     ) -> Result:
+        self.cast_counter += 1
         pool += self.cast(cast)
-        # logger.debug("Running")
         if any(isinstance(card, Krark) for card in board):
             logger.info("Krark is on board.")
             for _ in range(len([isinstance(card, Enhancer) for card in board])):
@@ -92,6 +94,5 @@ class Engine:
             if not Result.can_cast(pool, spell):
                 break
             pool = self.pay_spell(spell, pool)
-            logger.debug(f"Pool status: {pool}")
-            pool += self.run(spell, board, pool)
+            pool = self.run(spell, board, pool)
         return pool

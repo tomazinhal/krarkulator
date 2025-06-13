@@ -2,13 +2,13 @@ from typing import Optional
 
 from structlog import getLogger
 
-from krarkulator.common import Color, Result
+from krarkulator.common import Result
 
 logger = getLogger()
 
 
 class Card:
-    cost: list[Color]
+    cost: Result
     name: str
     is_non_creature: bool
     is_instant_sorcery: bool
@@ -37,12 +37,14 @@ class Card:
 
     def trigger_on_cast(self) -> Optional[Result]:
         """Trigger when any spell is cast."""
-        logger.info(f"Triggered on-cast trigger from {self.name}")
+        logger.debug(f"Triggered on-cast trigger from {self.name}")
         raise NotImplementedError
 
     def resolve(self) -> Optional[Result]:
         if self.in_hand:
+            logger.debug(f"{self.name} is in hand and does NOT resolve.")
             return
+        logger.debug(f"{self.name} resolves.")
         return self.output
 
     def copy(self) -> Result:

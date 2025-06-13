@@ -7,7 +7,7 @@ logger = getLogger()
 
 
 class RiteOfFlame(Sorcery):
-    cost = [Color.RED]
+    cost = Result.from_colors([Color.RED])
     name = "Rite of Flame"
     is_instant_sorcery = True
     is_non_creature = True

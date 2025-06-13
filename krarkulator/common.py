@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from enum import Enum
 from typing import Optional, Self
+
 import structlog
 
 logger = structlog.getLogger()
@@ -81,17 +82,12 @@ class Result:
         """Triggers prowess `times` times."""
         self.prowess += times
 
-    @classmethod
-    def can_cast(cls, pool: Self, spell) -> bool:
-        result = pool - Result.from_colors(spell.cost)
-        logger.debug(f"spell cost: {Result.from_colors(spell.cost)} and {pool}")
-        for _, value in result.__dict__.items():
-            if isinstance(value, Mana):
-                for _, mana in value.__dict__.items():
-                    if mana < 0:
-                        logger.info(f"{spell.name} can NOT be cast.")
-                        return False
-            elif value < 0:
+    def can_cast(self, spell) -> bool:
+        """Check if a spell can be cost. Done by comparing the cost of a spell
+        with the available pool."""
+        for color, available_mana in self.mana.__dict__.items():
+            color_mana_cost = getattr(spell.cost.mana, color)
+            if available_mana < color_mana_cost:
                 logger.info(f"{spell.name} can NOT be cast.")
                 return False
         logger.debug(f"{spell.name} can be cast.")
