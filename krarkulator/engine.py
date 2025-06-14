@@ -27,8 +27,15 @@ class Engine:
     def flip(self):
         result = choice([Coin.HEADS, Coin.TAILS])
         self.history.append(result)
-        logger.info(f"Flipped {result.name}!")
+        logger.debug(f"Flipped {result.name}!")
         return result
+
+    def trigger_on_cast(self) -> Result:
+        results = Result.empty()
+        for card in self.board:
+            logger.debug(f"Casting the spell triggered {card}.")
+            results += card.trigger_on_cast()
+        return results
 
     def trigger_on_non_creature(self) -> Result:
         results = Result.empty()
@@ -40,12 +47,11 @@ class Engine:
     def trigger_magecraft(self) -> Result:
         results = Result.empty()
         for card in self.board:
-            logger.debug(f"Magecraft from {card} triggered.")
             results += card.trigger_magecraft()
         return results
 
     def cast(self, cast: Card) -> Result:
-        """Cast the given card,, triggering cards on board that the card
+        """Cast the given card, triggering cards on board that the card
         triggers.
 
         Calls:
@@ -56,13 +62,11 @@ class Engine:
         results = Result.empty()
         logger.debug(f"Casting {cast.name}.")
         cast.cast()
-        for card in self.board:
-            logger.debug(f"Checking {card.name}")
-            results += card.trigger_on_cast()
-            if cast.is_non_creature:
-                results += self.trigger_on_non_creature()
-            if cast.is_instant_sorcery:
-                results += self.trigger_magecraft()
+        results += self.trigger_on_cast()
+        if cast.is_non_creature:
+            results += self.trigger_on_non_creature()
+        if cast.is_instant_sorcery:
+            results += self.trigger_magecraft()
         return results
 
     @staticmethod
@@ -70,25 +74,39 @@ class Engine:
         logger.debug(f"Cost of spell: {spell.cost}, pool: {pool}")
         return pool - spell.cost
 
+    def krark_trigger(self, spell: Card, board: list[Card]) -> Result:
+        """Resolves a Krark trigger.
+        If HEADS, put a copy on the stack and trigger respective cards in board.
+        If TAILS, return card to hand.
+        """
+        coinflip = self.flip()
+        result = Result.empty()
+        assert spell.is_instant_sorcery
+        match coinflip:
+            case Coin.HEADS:
+                result = self.trigger_magecraft()
+                result += spell.copy()
+            case Coin.TAILS:
+                spell.bounce()
+        return result
+
     def run(
         self, cast: Card, board: list[Card], pool: Optional[Result] = Result.empty()
     ) -> Result:
         self.cast_counter += 1
         pool += self.cast(cast)
         if any(isinstance(card, Krark) for card in board):
-            logger.info("Krark is on board.")
-            for _ in range(len([isinstance(card, Enhancer) for card in board])):
-                if self.flip():
-                    pool += self.trigger_magecraft()
-                    pool += cast.copy()
-                else:
-                    cast.bounce()
+            logger.debug("Krark is on board.")
+            pool += self.krark_trigger(spell=cast, board=board)
+            enhancers = [card for card in board if isinstance(card, Enhancer)]
+            for enhancer in enhancers:
+                pool += self.krark_trigger(spell=cast, board=board)
         pool += cast.resolve()
         return pool
 
     def loop(self, spell: Card, board: list[Card], pool: Result) -> Result:
-        logger.debug(
-            f"Casting {spell.name} with {" and ".join([card.name for card in board])} in play and {pool.mana} available."
+        logger.info(
+            f"Casting {spell.name} with {", ".join([card.name for card in board])} in play and {pool.mana} available."
         )
         while spell.in_hand:
             if not Result.can_cast(pool, spell):

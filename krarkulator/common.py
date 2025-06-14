@@ -55,6 +55,34 @@ class Result:
     untaps: int = 0
     prowess: int = 0
 
+    def __init__(
+        self,
+        white: int = 0,
+        blue: int = 0,
+        black: int = 0,
+        red: int = 0,
+        green: int = 0,
+        colorless: int = 0,
+        treasures: int = 0,
+        untaps: int = 0,
+        prowess: int = 0,
+        mana: Optional[Mana] = None,
+    ):
+        if mana is None:
+            self.mana = Mana(
+                white=white,
+                blue=blue,
+                black=black,
+                red=red,
+                green=green,
+                colorless=colorless,
+            )
+        else:
+            self.mana = mana
+        self.treasures = treasures
+        self.untaps = untaps
+        self.prowess = prowess
+
     @classmethod
     def empty(cls) -> Self:
         return cls(mana=Mana())

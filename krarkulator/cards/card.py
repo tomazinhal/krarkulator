@@ -2,6 +2,7 @@ from typing import Optional
 
 from structlog import getLogger
 
+from krarkulator.cards.subtypes import Subtype
 from krarkulator.common import Result
 
 logger = getLogger()
@@ -10,6 +11,7 @@ logger = getLogger()
 class Card:
     cost: Result
     name: str
+    subtype: Subtype
     is_non_creature: bool
     is_instant_sorcery: bool
     output: Result
@@ -18,9 +20,9 @@ class Card:
     def bounce(self):
         """Set the card to be in hand."""
         if self.in_hand:
-            logger.info(f"{self} already in  hand.")
+            logger.debug(f"{self} already in  hand.")
             return
-        logger.info(f"Returned {self} to hand.")
+        logger.debug(f"Returned {self} to hand.")
         self.in_hand = True
 
     def cast(self):
